@@ -1,74 +1,137 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, ScrollView, Dimensions } from "react-native";
+import { Image } from "expo-image";
+import { ThemedView } from "@/components/ThemedView";
+import { SafeAreaView } from "react-native-safe-area-context";
+import axios from "axios";
+import Carousel, {
+	ICarouselInstance,
+	Pagination,
+} from "react-native-reanimated-carousel";
+import { useSharedValue } from "react-native-reanimated";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { Colors } from "@/constants/Colors";
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+//get display width
+const width = Dimensions.get("window").width;
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
-  );
+	//define empty array variable for images
+	const [banners, setBanners] = useState([]);
+
+	//set themes color according to device themes
+	const colorScheme = useColorScheme();
+	const themeCarousel =
+		colorScheme === "light" ? styles.carouselLight : styles.carouselDark;
+
+	//call loadData function only once when the home page appears
+	useEffect(() => {
+		loadData();
+	}, []);
+
+	//get data from server
+	const loadData = async () => {
+		axios
+			.get(`https://tempdev2.roomie.id/newsadmin/banner`, {})
+			.then(function (response) {
+				if (response.data.success == true) {
+					//set banner variable with data from API
+					setBanners(response.data.data);
+				}
+			});
+	};
+
+	const ref = React.useRef<ICarouselInstance>(null);
+	const progress = useSharedValue<number>(0);
+	const onPressPagination = (index: number) => {
+		ref.current?.scrollTo({
+			count: index - progress.value,
+			animated: true,
+		});
+	};
+
+	//content of the image banner to be rendered
+	const renderItem = ({ item }: { item: string }) => {
+		return (
+			<View
+				style={{
+					flex: 1,
+					justifyContent: "center",
+				}}
+			>
+				<Image
+					style={styles.imageBanner}
+					source={item}
+					contentFit="contain"
+				/>
+			</View>
+		);
+	};
+
+	return (
+		<SafeAreaView style={styles.saveContainer}>
+			<ScrollView>
+				<ThemedView style={styles.imageLogoContainer}>
+					<Image
+						style={styles.imageLogo}
+						source={require("@/assets/images/logo.svg")}
+						contentFit="contain"
+					/>
+				</ThemedView>
+
+				<View style={[themeCarousel]}>
+					<Carousel
+						ref={ref}
+						width={width}
+						height={width / 2 - 22}
+						data={banners}
+						onProgressChange={progress}
+						renderItem={renderItem}
+						loop={true}
+						autoPlay
+						autoPlayInterval={5000}
+						mode="parallax"
+					/>
+
+					<Pagination.Basic
+						progress={progress}
+						data={banners}
+						dotStyle={{
+							backgroundColor: "rgba(0,0,0,0.2)",
+							borderRadius: 50,
+						}}
+						containerStyle={{ gap: 10, marginTop: 0 }}
+						onPress={onPressPagination}
+					/>
+				</View>
+			</ScrollView>
+		</SafeAreaView>
+	);
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+	saveContainer: {
+		flex: 1,
+	},
+	imageLogoContainer: {
+		flex: 1,
+		flexDirection: "column",
+		alignItems: "center",
+		height: 80,
+		paddingTop: 10,
+		marginBottom: 0,
+	},
+	imageLogo: {
+		width: 80,
+		height: 80 * (144 / 165),
+	},
+
+	carouselLight: {
+		backgroundColor: Colors.light.background,
+	},
+	carouselDark: { backgroundColor: Colors.dark.background },
+	imageBanner: {
+		width: "100%",
+		height: "100%",
+	},
 });
