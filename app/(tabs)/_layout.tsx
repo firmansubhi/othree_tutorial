@@ -7,6 +7,7 @@ import { IconSymbol } from "@/components/ui/IconSymbol";
 import TabBarBackground from "@/components/ui/TabBarBackground";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { Image } from "expo-image";
 
 export default function TabLayout() {
 	const colorScheme = useColorScheme();
@@ -41,10 +42,17 @@ export default function TabLayout() {
 				options={{
 					title: "Explore",
 					tabBarIcon: ({ color }) => (
-						<IconSymbol
-							size={28}
-							name="paperplane.fill"
-							color={color}
+						<Image
+							style={[
+								{
+									width: 64,
+									height: 64,
+									position: "absolute",
+									bottom: 0,
+								},
+							]}
+							source={require("@/assets/images/qr-icon.svg")}
+							contentFit="cover"
 						/>
 					),
 				}}
